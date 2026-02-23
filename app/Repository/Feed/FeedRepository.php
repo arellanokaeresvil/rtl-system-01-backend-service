@@ -1,0 +1,21 @@
+<?php
+
+namespace App\Repository\Feed;
+
+use App\Models\Feed;
+use App\Repository\Base\BaseRepository;
+
+class FeedRepository extends BaseRepository implements FeedRepositoryInterface
+{
+    protected $model;
+
+    public function __construct(Feed $model)
+    {
+        $this->model = $model;
+    }
+
+    public function Options()
+    {
+        return $this->model->where('quantity_kg', '>', 0)->get();
+    }
+}
