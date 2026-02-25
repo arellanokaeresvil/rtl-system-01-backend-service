@@ -2,14 +2,12 @@
 
 namespace App\Http\Controllers\Egg;
 
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Egg\CustomizeRequest;
 use App\Http\Requests\Egg\EggRequest;
 use App\Http\Resources\Egg\EggResource;
-use App\Services\Utils\ResponseService;
 use App\Http\Resources\Egg\EggCollection;
 use App\Services\Egg\EggServiceInterface;
-use App\Http\Resources\Batch\BatchCollection;
 use App\Http\Resources\Egg\EggBatchCollection;
 use App\Repository\Egg\EggRepositoryInterface;
 use App\Services\Utils\ResponseServiceInterface;
@@ -58,10 +56,22 @@ class EggController extends Controller
         return $this->responseService->showResponse($this->name, new EggResource($egg));
     }
 
-    public function store(EggRequest $request)
+    public function store(CustomizeRequest $request)
     {
-        $egg = $this->eggRepository->create($request->validated());
-        return $this->responseService->storeResponse($this->name, new EggResource($egg));
+        $egg = $this->eggService->storePerPiece($request->validated());
+        return $this->responseService->storeResponse($this->name,$egg);
+    }
+
+    public function storePerTray(CustomizeRequest $request)
+    {
+        $egg = $this->eggService->storePerTray($request->validated());
+        return $this->responseService->storeResponse($this->name, $egg);
+    }
+
+    public function storeCustomize(CustomizeRequest $request)
+    {
+        $egg = $this->eggService->storeCustomize($request->validated());
+        return $this->responseService->storeResponse($this->name, $egg);
     }
 
     public function update(EggRequest $request, $id)
