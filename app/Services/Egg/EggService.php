@@ -30,6 +30,22 @@ class EggService implements EggServiceInterface
         return $eggs;
     }
 
+    public function getAvailableEgg(): array
+    {
+        $eggs = Egg::select('grade')
+            ->where('is_sold', false)
+            ->selectRaw('SUM(CASE WHEN unit = "piece" THEN 1 WHEN unit = "tray" THEN total * 30 WHEN unit = "custom" THEN total ELSE 0 END) as count')
+            ->groupBy('grade')
+            ->get()
+            ->map(fn($item) => [
+                'grade' => $item->grade,
+                'count' => (int)$item->count
+            ])
+            ->toArray();
+
+        return $eggs;
+    }
+
     public function getByBatch(array $search = [])
     {
       $eggs = Egg::select('batch_id', 'date_collected')

@@ -34,11 +34,19 @@ class EggController extends Controller
         if(request()->has('getByBatch')) {
                 return $this->getByBatch();
         }
+        if(request()->has('getAvailableEgg')) {
+                return $this->getAvailableEgg();
+        }
         $search = request('search', null); 
         $eggs = $this->eggRepository->list(['search' => $search]);
         return $this->responseService->successResponse($this->name, new EggCollection($eggs));
     }
 
+    private function getAvailableEgg()
+    {
+        $eggs = $this->eggService->getAvailableEgg();
+        return $this->responseService->successResponse($this->name, $eggs);
+    }
     private function getByGrade()
     {
         $eggs = $this->eggService->getByGrade();
