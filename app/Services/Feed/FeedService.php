@@ -51,6 +51,13 @@ class FeedService implements FeedServiceInterface
             ->selectRaw('SUM(quantity_kg) as total_quantity_kg')
             ->selectRaw('COUNT(*) as count')
             ->selectRaw('MAX(date_manufactured) as last_restock')
+            ->selectRaw('
+            (SELECT supplier 
+            FROM feeds f2 
+            WHERE f2.type = feeds.type 
+            ORDER BY created_at DESC 
+            LIMIT 1) as supplier
+        ')
             ->groupBy('type')
             ->get()
             ->toArray();
