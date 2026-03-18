@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Feed;
 
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -20,7 +21,7 @@ class FeedUsageResource extends JsonResource
            'feed_id' => $this->feed_id,
            'batch' => $this->batch ?? null,
            'batch_id' => $this->batch_id,
-           'used_at' => $this->used_at,
+           'used_at' => Carbon::parse($this->used_at)->format('Y-m-d'),
            'quantity_kg' => $this->quantity_kg,
            'source' => $this->source,
            'remarks' => $this->remarks,

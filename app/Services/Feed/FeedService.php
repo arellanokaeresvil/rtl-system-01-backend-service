@@ -23,9 +23,10 @@ class FeedService implements FeedServiceInterface
         public function create(array $data): Feed
     {
         $countFeeds = Feed::count();
-        $date = date('Y-m-d');
+        $date = date('Y');
         $feed_code = 'FD-' . $date . '-' . str_pad($countFeeds + 1, 3, '0', STR_PAD_LEFT);
         $data['feed_code'] = $feed_code;
+        $data['remaining_kg'] = $data['quantity_kg'];
         return $this->feedRepository->create($data);
     }
 
@@ -35,10 +36,10 @@ class FeedService implements FeedServiceInterface
         if (!$feed) {
             throw ValidationException::withMessages(['not_found' => 'Feed not found']);
         }
-        if ($feed->quantity_kg < $data['quantity_kg']) {
+        if ($feed->remaining_kg < $data['quantity_kg']) {
             throw ValidationException::withMessages(['quantity_kg' => 'Insufficient feed quantity']);
         }
-        $feed->quantity_kg -= $data['quantity_kg'];
+        $feed->remaining_kg -= $data['quantity_kg'];
         $feed->save();
 
         return $this->feedUsageRepository->create($data);
@@ -48,7 +49,7 @@ class FeedService implements FeedServiceInterface
     public function getByType(): array
     {
             $feeds = Feed::select('type')
-            ->selectRaw('SUM(quantity_kg) as total_quantity_kg')
+            ->selectRaw('SUM(remaining_kg) as total_quantity_kg')
             ->selectRaw('COUNT(*) as count')
             ->selectRaw('MAX(date_manufactured) as last_restock')
             ->selectRaw('

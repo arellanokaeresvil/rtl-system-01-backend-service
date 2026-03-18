@@ -22,7 +22,8 @@ class FeedResource extends JsonResource
             'date_manufactured' => $this->date_manufactured,
             'quantity_kg' => $this->quantity_kg,
             'remaining_kg' => $this->remaining_kg,
-            'cost_per_kg' => $this->cost_per_kg,
+            'cost_per_kg' => number_format($this->cost_per_kg, 2),
+            'total_cost' => number_format($this->quantity_kg * $this->cost_per_kg, 2),
             'supplier' => $this->supplier,
 
         ];
