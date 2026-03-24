@@ -16,6 +16,7 @@ class EggSale extends Model
             'sold_at',
             'quantity',
             'unit',
+            'grade',
             'price_per_unit',
             'total_amount',
             'notes'

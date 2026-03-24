@@ -20,7 +20,8 @@ class Egg extends Model
         'source',
         'device_id',
         'unit',
-        'total'
+        'total',
+        'remaining'
     ];
 
      public function batch()

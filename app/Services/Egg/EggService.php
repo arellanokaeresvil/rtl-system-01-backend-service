@@ -34,7 +34,8 @@ class EggService implements EggServiceInterface
     {
         $eggs = Egg::select('grade')
             ->where('is_sold', false)
-            ->selectRaw('SUM(CASE WHEN unit = "piece" THEN 1 WHEN unit = "tray" THEN total * 30 WHEN unit = "custom" THEN total ELSE 0 END) as count')
+            // ->selectRaw('SUM(CASE WHEN unit = "piece" THEN 1 WHEN unit = "tray" THEN total * 30 WHEN unit = "custom" THEN total ELSE 0 END) as count')
+            ->selectRaw('SUM(CASE WHEN unit = "piece" THEN 1 ELSE remaining END) as count')
             ->groupBy('grade')
             ->get()
             ->map(fn($item) => [
@@ -116,6 +117,7 @@ class EggService implements EggServiceInterface
                     'grade' => $item['grade'],
                     'unit' => 'tray',
                     'total' => $item['total'],
+                    'remaining' => $item['total'] * 30,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ];
@@ -144,6 +146,7 @@ class EggService implements EggServiceInterface
                     'grade' => $item['grade'],
                     'unit' => 'custom',
                     'total' => $item['total'],
+                    'remaining' => $item['total'],
                     'created_at' => now(),
                     'updated_at' => now(),
                 ];

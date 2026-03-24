@@ -17,6 +17,8 @@ use App\Services\Batch\BatchServiceInterface;
 use App\Services\Utils\ResponseServiceInterface;
 use App\Repository\Mortality\MortalityRepository;
 use App\Repository\Mortality\MortalityRepositoryInterface;
+use App\Services\Sale\SaleServiceInterface;
+use App\Services\Sale\SaleService;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -32,6 +34,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(MortalityRepositoryInterface::class, MortalityRepository::class);
         $this->app->bind(BirdServiceInterface::class, BirdService::class);
         $this->app->bind(EggServiceInterface::class, EggService::class);
+        $this->app->bind(SaleServiceInterface::class, SaleService::class);
     }
 
     /**
