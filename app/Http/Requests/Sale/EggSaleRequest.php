@@ -22,9 +22,10 @@ class EggSaleRequest extends FormRequest
     public function rules(): array
     {
          return [
-            'batch_id' => ['required','exists:batches,id',],
+            'batch_id' => ['nullable','exists:batches,id',],
             'sold_to' => ['nullable','string','max:255'],
             'unit' => ['required','string','max:255'],
+            'grade' => ['required','string','max:255'],
             'notes' => ['nullable','string','max:255'],
             'sold_at' => ['required','date'],
             'quantity' => ['required','numeric','between:0,9999.99'],
