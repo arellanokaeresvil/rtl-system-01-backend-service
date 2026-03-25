@@ -18,6 +18,7 @@ class ExpenseCategoryResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'is_batch_specific' => $this->is_batch_specific,
+            'description' => $this->description,
             // 'expenses' => ExpenseResource::collection($this->expenses),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
