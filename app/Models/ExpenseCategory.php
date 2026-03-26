@@ -13,7 +13,8 @@ class ExpenseCategory extends Model
     protected $table = 'expense_categories';
     protected $fillable = [
         'name',
-        'is_batch_specific'
+        'is_batch_specific',
+        'description'
     ];
 
     public function expenses()

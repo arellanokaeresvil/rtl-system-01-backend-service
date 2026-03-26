@@ -23,6 +23,7 @@ class ExpenseCategoryRequest extends FormRequest
     {
         return [
            'name' => 'required|string|max:255',
+           'description' => 'required|string|max:255',
            'is_batch_specific' => 'nullable|boolean'
         ];
     }
