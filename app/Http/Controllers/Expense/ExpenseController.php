@@ -9,17 +9,20 @@ use App\Http\Resources\Expense\ExpenseResource;
 use App\Services\Utils\ResponseServiceInterface;
 use App\Http\Resources\Expense\ExpenseCollection;
 use App\Repository\Expense\ExpenseRepositoryInterface;
+use App\Services\Expense\ExpenseServiceInterface;
 
 class ExpenseController extends Controller
 {
     private $expenseRepository;
+    private $expenserServices;
     private $responseService;
     private $name = 'Expense';
 
-    public function __construct(ExpenseRepositoryInterface $expenseRepository, ResponseServiceInterface $responseService)
+    public function __construct(ExpenseRepositoryInterface $expenseRepository, ResponseServiceInterface $responseService, ExpenseServiceInterface $expenserServices)
     {
         $this->expenseRepository = $expenseRepository;
         $this->responseService = $responseService;
+        $this->expenserServices = $expenserServices;
     }
 
     public function index()
@@ -27,6 +30,12 @@ class ExpenseController extends Controller
         $search = request('search', null); 
         $expenses = $this->expenseRepository->list(['search' => $search]);
         return $this->responseService->successResponse($this->name, new ExpenseCollection($expenses));
+    }
+    public function summary()
+    {
+       
+        $expenses = $this->expenserServices->summary();
+        return $this->responseService->successResponse($this->name,$expenses);
     }
 
     public function show($id)
