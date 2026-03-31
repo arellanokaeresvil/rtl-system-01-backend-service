@@ -16,6 +16,11 @@ class FeedRepository extends BaseRepository implements FeedRepositoryInterface
 
     public function Options()
     {
-        return $this->model->where('remaining_kg', '>', 0)->orderBy('created_at', 'ASC')->get();
+       
+        if(request('type')){
+            $this->model = $this->model->where('type', request('type'));
+        }
+
+        return $this->model->where('remaining_kg', '>', 0)->orderBy('date_manufactured', 'ASC')->get();
     }
 }

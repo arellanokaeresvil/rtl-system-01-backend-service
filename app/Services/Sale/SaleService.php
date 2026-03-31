@@ -129,9 +129,9 @@ class SaleService implements SaleServiceInterface
         $birdSales = (float) BirdSale::query()->sum('total_amount');
 
         return [
-            'egg_sales' =>number_format($eggSales,2),
-            'bird_sales' => number_format($birdSales,2),
-            'total_revenue' => number_format($eggSales + $birdSales,2),
+            'egg_sales' =>$eggSales,
+            'bird_sales' => $birdSales,
+            'total_revenue' => $eggSales + $birdSales,
         ];
     }
 

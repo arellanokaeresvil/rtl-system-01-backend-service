@@ -60,9 +60,9 @@ class FeedController extends Controller
         return $this->responseService->updateResponse($this->name, new FeedResource($feed));
     }
 
-    public function getOptions()
+    public function getOptions(Request $request)
     {
-        $types = $this->feedRepository->Options();
+        $types = $this->feedRepository->Options($request);
         return $this->responseService->successResponse($this->name, FeedOptionResource::collection($types));
     }
 
