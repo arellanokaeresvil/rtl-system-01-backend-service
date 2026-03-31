@@ -17,7 +17,9 @@ class BatchOptionResource extends JsonResource
         return [
             'id' => $this->id,
             'batch_code' => $this->batch_code,
-            'breed' => $this->breed
+            'breed' => $this->breed,
+            'daily_feed_per_bird_kg' => $this->daily_feed_per_bird_kg,
+            'current_quantity' => $this->current_quantity
         ];
     }
 }
