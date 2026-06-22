@@ -12,6 +12,7 @@ use Illuminate\Validation\ValidationException;
 use App\Repository\Feed\FeedRepositoryInterface;
 use App\Repository\Feed\FeedUsageRepositoryInterface;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class FeedService implements FeedServiceInterface
 {
@@ -45,51 +46,118 @@ class FeedService implements FeedServiceInterface
 
     public function deduct(array $data): FeedUsage
     {
-        $feed = $this->feedRepository->find($data['feed_id']);
-        $consumed_today = FeedUsage::where('batch_id', $data['batch_id'])->whereDate('used_at',$data['used_at'])->first();
-        if ($consumed_today) {
-            throw ValidationException::withMessages(['already_consumed' => 'The selected batch has already consumed feeds for the selected date.']);
+        DB::beginTransaction();
+        try {
+            $requestedKg = floatval($data['quantity_kg']);
+            $initialFeed = $this->feedRepository->find($data['feed_id']);
+
+            if (!$initialFeed) {
+                throw ValidationException::withMessages(['not_found' => 'Feed not found']);
+            }
+
+            // gather all available feeds of the same type (initial first)
+            $otherFeeds = Feed::where('type', $initialFeed->type)
+                ->where('remaining_kg', '>', 0)
+                ->where('id', '!=', $initialFeed->id)
+                ->orderBy('date_manufactured')
+                ->get();
+
+            $feedsList = collect([$initialFeed])->merge($otherFeeds);
+
+            $totalAvailable = $feedsList->sum(fn($f) => floatval($f->remaining_kg));
+
+            if ($totalAvailable < $requestedKg) {
+                throw ValidationException::withMessages(['quantity_kg' => 'Insufficient total feed quantity for this feed type']);
+            }
+
+            $batch = $this->batchRepository->find($data['batch_id']);
+            $expense_category = ExpenseCategory::where('name', 'Feeds')->orWhere('name', 'Feed')->first();
+
+            $feedCodes = [];
+            $totalExpenseAmount = 0;
+            $lastUsage = null;
+
+            foreach ($feedsList as $feed) {
+                if ($requestedKg <= 0) break;
+
+                $available = floatval($feed->remaining_kg);
+                if ($available <= 0) continue;
+
+                $deduct = min($available, $requestedKg);
+
+                // update feed remaining
+                $feed->remaining_kg = $available - $deduct;
+                $feed->save();
+
+                // create a feed usage record for this portion
+                $usageData = $data;
+                $usageData['feed_id'] = $feed->id;
+                $usageData['quantity_kg'] = $deduct;
+
+                $lastUsage = $this->feedUsageRepository->create($usageData);
+
+                // accumulate expense amount (use each feed's cost_per_kg)
+                $totalExpenseAmount += ($feed->cost_per_kg * $deduct);
+                $feedCodes[] = $feed->feed_code;
+
+                $requestedKg -= $deduct;
+            }
+
+            // create single expense record summarizing the whole consumption
+            $expense = [
+                'expense_category_id' => $expense_category?->id,
+                'expense_date' => $data['used_at'],
+                'amount' => $totalExpenseAmount,
+                'reference_no' => implode(', ', $feedCodes),
+                'description' => "System created: {$data['quantity_kg']}kg feeds consumed by {$batch->batch_code}"
+            ];
+
+            $this->expenseRepository->create($expense);
+
+            DB::commit();
+
+            // return last created usage record (keeps signature). You can adjust to return summary if desired.
+            return $lastUsage;
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            throw $e;
         }
-        if (!$feed) {
-            throw ValidationException::withMessages(['not_found' => 'Feed not found']);
-        }
-        if ($feed->remaining_kg < $data['quantity_kg']) {
-            throw ValidationException::withMessages(['quantity_kg' => 'Insufficient feed quantity']);
-        }
-        $feed->remaining_kg -= $data['quantity_kg'];
-        $feed->save();
-
-        $batch = $this->batchRepository->find($data['batch_id']);
-        $expense_category = ExpenseCategory::where('name', 'Feeds')->first();
-        $expense = [
-            'expense_category_id' => $expense_category?->id,
-            'expense_date' => $data['used_at'],
-            'amount' => $feed->cost_per_kg * $data['quantity_kg'],
-            'reference_no' => $feed->feed_code,
-            'description' => "System created: {$data['quantity_kg']}kg feeds consumed by {$batch->batch_code}"
-        ];
-
-        $this->expenseRepository->create($expense);
-
-        return $this->feedUsageRepository->create($data);
-
     }
 
     public function getByType(): array
     {
-            $feeds = Feed::select('type')
+        $feeds = Feed::select('type')
             ->selectRaw('SUM(remaining_kg) as total_quantity_kg')
             ->selectRaw('COUNT(*) as count')
             ->selectRaw('MAX(date_manufactured) as last_restock')
             ->selectRaw('
-            (SELECT supplier 
-            FROM feeds f2 
-            WHERE f2.type = feeds.type 
-            ORDER BY created_at DESC 
-            LIMIT 1) as supplier
-        ')
+                (SELECT supplier 
+                FROM feeds f2 
+                WHERE f2.type = feeds.type 
+                ORDER BY created_at DESC 
+                LIMIT 1) as supplier
+            ')
             ->groupBy('type')
             ->get()
+            ->map(function($feed) {
+                // Calculate total daily consumption across all active batches
+                $totalDailyConsumption = \App\Models\Batch::where('status', '!=','sold')
+                ->orWhere('status','!=','culled')
+                    ->get()
+                    ->sum(function($batch) {
+                        return ( ($batch->current_quantity * $batch->daily_feed_per_bird_kg) / 1000);
+                    });
+
+                // Calculate expected days before stock runs out
+                $expectedDaysToConsume = $totalDailyConsumption > 0 
+                    ? round(floatval($feed->total_quantity_kg) / $totalDailyConsumption)
+                    : 0;
+
+                return array_merge($feed->toArray(), [
+                    'expected_days_to_consume' => $expectedDaysToConsume,
+                    'daily_consumption_kg' => round($totalDailyConsumption, 2)
+                ]);
+            })
             ->toArray();
 
         return $feeds;

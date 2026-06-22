@@ -27,8 +27,9 @@ class FeedUsageController extends Controller
 
     public function index()
     {
-        $search = request('search', null); 
-        $feedUsages = $this->feedUsageRepository->list(['search' => $search]);
+        $search = request('search', null);
+        $sortByColumn = request('sortByColumn', 'created_at');
+        $feedUsages = $this->feedUsageRepository->list(['search' => $search, 'sortByColumn' => $sortByColumn]);
         return $this->responseService->successResponse($this->name, new FeedUsageCollection($feedUsages));
     }
 

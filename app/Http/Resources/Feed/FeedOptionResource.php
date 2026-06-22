@@ -20,6 +20,7 @@ class FeedOptionResource extends JsonResource
             'name' => $this->name,
             'feed_code' => $this->feed_code,
             'quantity_kg' => $this->quantity_kg,
+            'remaining_kg' => $this->remaining_kg,
         ];
     }
 }
