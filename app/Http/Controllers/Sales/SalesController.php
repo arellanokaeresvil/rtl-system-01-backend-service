@@ -43,5 +43,12 @@ class SalesController extends Controller
     $data = $this->saleService->records();
     return $this->responseService->successResponse($this->name, $data);
    }
-  
+
+   public function updateStatus(Request $request, $id)
+   {
+       $data = $request->all();
+       $sale = $this->saleService->updateStatus($data, $id, $data['type']);
+       return $this->responseService->updateResponse($this->name, $sale);
+   }
+
 }

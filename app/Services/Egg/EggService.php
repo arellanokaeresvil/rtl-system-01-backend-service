@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Override;
 
 use function Illuminate\Log\log;
 
@@ -30,8 +31,11 @@ class EggService implements EggServiceInterface
         return $eggs;
     }
 
-    public function getAvailableEgg(): array
+    public function getAvailableEgg()
     {
+        $overall = Egg::selectRaw('SUM(CASE WHEN unit = "piece" THEN 1 WHEN unit = "tray" THEN total * 30 WHEN unit = "custom" THEN total ELSE 0 END) as overall')
+        ->get();
+   
         $eggs = Egg::select('grade')
             ->where('is_sold', false)
             // ->selectRaw('SUM(CASE WHEN unit = "piece" THEN 1 WHEN unit = "tray" THEN total * 30 WHEN unit = "custom" THEN total ELSE 0 END) as count')
@@ -40,7 +44,8 @@ class EggService implements EggServiceInterface
             ->get()
             ->map(fn($item) => [
                 'grade' => $item->grade,
-                'count' => (int)$item->count
+                'count' => (int)$item->count,
+                'overall' => (int)$overall->first()->overall
             ])
             ->toArray();
 
@@ -63,7 +68,86 @@ class EggService implements EggServiceInterface
         ->orderBy('date_collected', 'desc')
         ->paginate(request('limit') ?? 10);
 
+        // Calculate production percentage based on batch current_quantity
+        $eggs->map(function($item) {
+            $batch = \App\Models\Batch::find($item->batch_id);
+            $productionPercentage = $batch->current_quantity > 0 
+                ? round(($item->total / $batch->current_quantity) * 100, 2)
+                : 0;
+            
+            $item->production_percentage = $productionPercentage;
+            return $item;
+        });
+
         return $eggs;
+    }
+
+
+    public function loadProfitabilityEggs(): array
+    {
+        $startDate = request('start_date');
+        $endDate = request('end_date');
+
+        $eggCountExpression = 'CASE WHEN unit = "piece" THEN 1 WHEN unit = "tray" THEN total * 30 WHEN unit = "custom" THEN total ELSE 0 END';
+
+        $query = Egg::query()
+            ->when($startDate, fn ($query) => $query->whereDate('date_collected', '>=', $startDate))
+            ->when($endDate, fn ($query) => $query->whereDate('date_collected', '<=', $endDate));
+
+        $totalEggs = (int) (clone $query)
+            ->selectRaw("SUM($eggCountExpression) as total")
+            ->value('total');
+
+        $gradeTotals = (clone $query)
+            ->select('grade')
+            ->selectRaw("SUM($eggCountExpression) as total")
+            ->groupBy('grade')
+            ->get();
+
+        $gradeLabels = [
+            'J' => 'Jumbo',
+            'XL' => 'Extra Large',
+            'L' => 'Large',
+            'M' => 'Medium',
+            'S' => 'Small',
+            'XS' => 'Extra Small',
+            'P' => 'Pewee',
+        ];
+
+        $gradeBreakdown = collect($gradeLabels)->map(function ($label, $code) use ($gradeTotals, $totalEggs) {
+            $count = (int) ($gradeTotals->firstWhere('grade', $code)->total ?? 0);
+
+            return [
+                'code' => $code,
+                'label' => $label,
+                'count' => $count,
+                'share' => $totalEggs > 0 ? round(($count / $totalEggs) * 100, 2) : 0,
+            ];
+        })->values()->toArray();
+
+       $eggs = (clone $query)->select('batch_id', 'date_collected')
+        ->selectRaw('SUM(CASE WHEN unit = "piece" THEN 1 WHEN unit = "tray" THEN total * 30 WHEN unit = "custom" THEN total ELSE 0 END) as total')
+        ->selectRaw('SUM(CASE WHEN grade = "J" AND unit = "piece" THEN 1 WHEN grade = "J" AND unit = "tray" THEN total * 30 WHEN grade = "J" AND unit = "custom" THEN total ELSE 0 END) as jumbo')
+        ->selectRaw('SUM(CASE WHEN grade = "XL" AND unit = "piece" THEN 1 WHEN grade = "XL" AND unit = "tray" THEN total * 30 WHEN grade = "XL" AND unit = "custom" THEN total ELSE 0 END) as extra_large')
+        ->selectRaw('SUM(CASE WHEN grade = "L" AND unit = "piece" THEN 1 WHEN grade = "L" AND unit = "tray" THEN total * 30 WHEN grade = "L" AND unit = "custom" THEN total ELSE 0 END) as large')
+        ->selectRaw('SUM(CASE WHEN grade = "M" AND unit = "piece" THEN 1 WHEN grade = "M" AND unit = "tray" THEN total * 30 WHEN grade = "M" AND unit = "custom" THEN total ELSE 0 END) as medium')
+        ->selectRaw('SUM(CASE WHEN grade = "S" AND unit = "piece" THEN 1 WHEN grade = "S" AND unit = "tray" THEN total * 30 WHEN grade = "S" AND unit = "custom" THEN total ELSE 0 END) as small')
+        ->selectRaw('SUM(CASE WHEN grade = "XS" AND unit = "piece" THEN 1 WHEN grade = "XS" AND unit = "tray" THEN total * 30 WHEN grade = "XS" AND unit = "custom" THEN total ELSE 0 END) as extra_small')
+        ->selectRaw('SUM(CASE WHEN grade = "P" AND unit = "piece" THEN 1 WHEN grade = "P" AND unit = "tray" THEN total * 30 WHEN grade = "P" AND unit = "custom" THEN total ELSE 0 END) as pewee')
+        ->groupBy('batch_id', 'date_collected')
+        ->orderBy('date_collected', 'desc')
+        ->get();
+
+        return [
+            'summary' => [
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+                'total_eggs' => $totalEggs,
+                'record_count' => $eggs->count(),
+            ],
+            'grades' => $gradeBreakdown,
+            'data' => $eggs,
+        ];
     }
 
     public function storePerPiece(array $data)

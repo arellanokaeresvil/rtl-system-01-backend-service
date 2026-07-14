@@ -21,6 +21,8 @@ use App\Services\Sale\SaleServiceInterface;
 use App\Services\Sale\SaleService;
 use App\Services\Expense\ExpenseServiceInterface;
 use App\Services\Expense\ExpenseService;
+use App\Services\Report\ReportServiceInterface;
+use App\Services\Report\ReportService;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -38,6 +40,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(EggServiceInterface::class, EggService::class);
         $this->app->bind(SaleServiceInterface::class, SaleService::class);
         $this->app->bind(ExpenseServiceInterface::class, ExpenseService::class);
+        $this->app->bind(ReportServiceInterface::class, ReportService::class);
     }
 
     /**

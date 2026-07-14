@@ -55,5 +55,15 @@ class Expense extends Model
             }
         );
 
+        $startDate = request('start_date');
+        $endDate = request('end_date');
+
+        $query->when(
+            $startDate && $endDate,
+            function ($query) use ($startDate, $endDate) {
+                $query->whereBetween('expense_date', [$startDate, $endDate]);
+            }
+        );
+
     }
 }

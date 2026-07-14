@@ -27,6 +27,7 @@ class EggBatchResource extends JsonResource
             'extra_small' => $this->extra_small,
             'pewee' => $this->pewee,
             'total' => $this->total,
+            'production_percentage' => $this->production_percentage ?? 0
         ];
     }
 }

@@ -126,6 +126,7 @@ class SaleService implements SaleServiceInterface
     public function records(): array
     {
         $limit = (int) request('limit', 10);
+        $search = request('search', '');
 
         $eggSales = EggSale::
             leftJoin('batches', 'egg_sales.batch_id', '=', 'batches.id')
@@ -175,6 +176,27 @@ class SaleService implements SaleServiceInterface
 
         $records = DB::query()
             ->fromSub($eggSales->unionAll($birdSales), 'sales')
+            ->when($search, function ($query) use ($search) {
+                $search = '%' . $search . '%';
+
+                $query->where(function ($query) use ($search) {
+                    $query->where('sale_type', 'like', $search)
+                        ->orWhere('batch', 'like', $search)
+                        ->orWhere('sold_to', 'like', $search)
+                        ->orWhere('sold_at', 'like', $search)
+                        ->orWhere('unit', 'like', $search)
+                        ->orWhere('grade', 'like', $search)
+                        ->orWhere('quantity', 'like', $search)
+                        ->orWhere('price', 'like', $search)
+                        ->orWhere('total_amount', 'like', $search)
+                        ->orWhere('mode_of_payment', 'like', $search)
+                        ->orWhere('reference_no', 'like', $search)
+                        ->orWhere('payment_status', 'like', $search)
+                        ->orWhere('partial_amount', 'like', $search)
+                        ->orWhere('balance', 'like', $search)
+                        ->orWhere('notes', 'like', $search);
+                });
+            })
             ->orderByDesc('sold_at')
             ->orderByDesc('created_at')
             ->paginate($limit);
@@ -190,6 +212,24 @@ class SaleService implements SaleServiceInterface
                 'to' => $records->lastItem(),
             ],
         ];
+    }
+
+
+    public function updateStatus($data, $id, $type)
+    {
+        if($type === 'egg') {
+            $sale = EggSale::findOrFail($id);
+        } else {
+            $sale = BirdSale::findOrFail($id);
+        }
+
+        $sale->is_paid = $data['is_paid'];
+        $sale->payment_status = $data['payment_status'];
+        $sale->partial_amount = $data['partial_amount'] ?? null;
+        $sale->balance = $data['balance'] ?? null;
+        $sale->save();
+
+        return $sale;
     }
 
 

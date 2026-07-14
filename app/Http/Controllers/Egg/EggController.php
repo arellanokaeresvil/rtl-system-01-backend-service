@@ -58,6 +58,13 @@ class EggController extends Controller
         return $this->responseService->successResponse($this->name, new EggBatchCollection($eggs));
     }
 
+
+    public function loadProfitabilityEggs()
+    {
+        $profitabilityData = $this->eggService->loadProfitabilityEggs();
+        return $this->responseService->successResponse($this->name, $profitabilityData);
+    }
+
     public function show($id)
     {
         $egg = $this->eggRepository->find($id);
