@@ -43,10 +43,28 @@ class FeedUsage extends Model
                     $fillableFields = $this->fillable;
                     $query->where(function ($query) use ($fillableFields, $search) {
                         foreach ($fillableFields as $field) {
-                            $query->orWhere($field, 'like', $search);
+                            $query->orWhere($field, 'like', $search)
+                            ->orWhereHas('feed', function ($query) use ($search) {
+                                $query->where('name', 'like', $search)
+                                ->orWhere('feed_code', 'like', $search)
+                                ->orWhere('type', 'like', $search);
+                            })
+                            ->orWhereHas('batch', function ($query) use ($search) {
+                                $query->where('batch_code', 'like', $search);
+                            });
                         }
                     });
                 });
+            }
+        );
+
+        $startDate = request('start_date');
+        $endDate = request('end_date');
+
+        $query->when(
+            $startDate && $endDate,
+            function ($query) use ($startDate, $endDate) {
+                $query->whereBetween('used_at', [$startDate, $endDate]);
             }
         );
 

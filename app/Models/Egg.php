@@ -48,6 +48,14 @@ class Egg extends Model
             }
         );
 
+        $query->when(request('start_date') ?? false, function ($query, $startDate) {
+            $query->whereDate('date_collected', '>=', $startDate);
+        });
+
+        $query->when(request('end_date') ?? false, function ($query, $endDate) {
+            $query->whereDate('date_collected', '<=', $endDate);
+        });
+
     }
 
     protected static function booted()

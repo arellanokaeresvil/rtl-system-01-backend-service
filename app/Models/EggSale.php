@@ -19,6 +19,12 @@ class EggSale extends Model
             'grade',
             'price_per_unit',
             'total_amount',
+            'mode_of_payment',
+            'reference_no',
+            'is_paid',
+            'payment_status',
+            'partial_amount',
+            'balance',
             'notes'
 
    ];

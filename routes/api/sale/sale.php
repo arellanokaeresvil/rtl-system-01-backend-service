@@ -8,4 +8,5 @@ Route::controller(SalesController::class)->prefix('sales')->group(function () {
      Route::get('records', 'records');
      Route::post('egg', 'store_egg_sale');
      Route::post('bird', 'store_bird_sale');
+      Route::put('update/status/{id}', 'updateStatus');
 });

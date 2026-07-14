@@ -31,7 +31,7 @@ class SalesController extends Controller
     public function store_egg_sale(EggSaleRequest $request)
     {
          $egg_sale = $this->saleService->create($request->validated(), 'egg');
-        return $this->responseService->storeResponse($this->name, new $egg_sale);
+        return $this->responseService->storeResponse($this->name, []);
     }
 
    public function summary(Request $request){
@@ -43,5 +43,12 @@ class SalesController extends Controller
     $data = $this->saleService->records();
     return $this->responseService->successResponse($this->name, $data);
    }
-  
+
+   public function updateStatus(Request $request, $id)
+   {
+       $data = $request->all();
+       $sale = $this->saleService->updateStatus($data, $id, $data['type']);
+       return $this->responseService->updateResponse($this->name, $sale);
+   }
+
 }
