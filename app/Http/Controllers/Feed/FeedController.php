@@ -60,6 +60,12 @@ class FeedController extends Controller
         return $this->responseService->updateResponse($this->name, new FeedResource($feed));
     }
 
+    public function reconciliation(Request $request, $id)
+    {
+        $feed = $this->feedService->reconcile($id, $request->all());
+        return $this->responseService->updateResponse($this->name, $feed);
+    }
+
     public function getOptions(Request $request)
     {
         $types = $this->feedRepository->Options($request);

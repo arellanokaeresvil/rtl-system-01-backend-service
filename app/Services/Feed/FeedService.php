@@ -5,6 +5,7 @@ namespace App\Services\Feed;
 use App\Models\ExpenseCategory;
 use App\Models\Feed;
 use App\Models\FeedUsage;
+use App\Models\FeedAdjustment;
 use App\Repository\Batch\BatchRepositoryInterface;
 use App\Repository\Expense\ExpenseRepositoryInterface;
 use Illuminate\Support\Facades\Log;
@@ -161,6 +162,61 @@ class FeedService implements FeedServiceInterface
             ->toArray();
 
         return $feeds;
+    }
+
+
+    public function reconcile($id, array $data)
+    {
+        try {
+            DB::beginTransaction();
+
+                $feed = $this->feedRepository->find($id);
+                if (!$feed) {
+                    throw ValidationException::withMessages(['not_found' => 'Feed not found']);
+                }
+
+                // Calculate the difference between the new remaining quantity and the current remaining quantity
+                $difference = floatval($data['quantity_kg']) - floatval($feed->remaining_kg);
+
+                // Update the feed's remaining quantity
+                $feed->remaining_kg = floatval($data['quantity_kg']);
+                $feed->save();
+
+        
+
+                // Create a feed adjustment record
+                $adjustmentData = [
+                    'feed_id' => $feed->id,
+                    'quantity_kg' => abs($difference),
+                    'cost' => abs($difference) * floatval($feed->cost_per_kg),
+                    'reason' => $data['reason'],
+                    'remarks' => $data['remarks'] ?? null,
+                ];
+
+                $expense_category = ExpenseCategory::where('name', 'Inventory Adjustment')->first();
+
+                $expenseData = [
+                    'expense_category_id' => $expense_category?->id,
+                    'expense_date' => now(),
+                    'amount' => abs($difference) * floatval($feed->cost_per_kg),
+                    'reference_no' => "Adjustment for feed: {$feed->feed_code}",
+                    'description' => "System created: Adjustment of {$difference}kg for feed {$feed->feed_code}. Reason: {$data['reason']}"
+                ];
+
+                $this->expenseRepository->create($expenseData);
+
+                $data = FeedAdjustment::create($adjustmentData);
+
+        
+            DB::commit();
+            return $data;
+           
+
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            throw $e;
+        }
+       
     }
 
 

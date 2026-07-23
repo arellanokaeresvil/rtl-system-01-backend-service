@@ -7,6 +7,7 @@ use App\Http\Controllers\FeedUsage\FeedUsageController;
 Route::controller(FeedController::class)->prefix('feeds')->group(function () {
      Route::get('restore/{id}', 'restore');
      Route::get('options', 'getOptions');
+     Route::post('reconciliation/{id}', 'reconciliation');
 });
 
 Route::controller(FeedUsageController::class)->prefix('feed-usages')->group(function () {
