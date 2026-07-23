@@ -10,5 +10,6 @@ interface FeedServiceInterface
     public function create(array $data): Feed;
     public function deduct(array $data): FeedUsage;
     public function getByType(): array;
+    public function reconcile($id, array $data);
 
 }

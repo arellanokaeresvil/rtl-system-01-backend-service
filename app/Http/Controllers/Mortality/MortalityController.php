@@ -38,4 +38,14 @@ class MortalityController extends Controller
         return $this->responseService->storeResponse($this->name, new MortalityResource($data));
     }
 
+    public function update(MortalityRequest $request) {
+        
+    }
+
+    public function show($id)
+    {
+        $mortality = $this->mortalityRepository->find($id);
+        return $this->responseService->successResponse($this->name, new MortalityResource($mortality));
+    }
+
 }
