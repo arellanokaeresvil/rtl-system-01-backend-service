@@ -49,6 +49,11 @@ class ExpenseCategoriesSeeder extends Seeder
                 'name' => 'Logistics/Transpo',
                 'description' => 'Gasoline, oil changes, tire repairs for the delivery bike.',
                 'is_batch_specific' => 1
+            ],
+            [
+                'name' => 'Inventory Adjustment',
+                'description' => 'Adjustments made to inventory levels, including write-offs and corrections.',
+                'is_batch_specific' => 1
             ]
             ];
 

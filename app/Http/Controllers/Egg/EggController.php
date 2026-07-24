@@ -65,6 +65,12 @@ class EggController extends Controller
         return $this->responseService->successResponse($this->name, $profitabilityData);
     }
 
+    public function weeklyEggProduction()
+    {
+        $weeklyData = $this->eggService->weeklyEggProduction();
+        return $this->responseService->successResponse($this->name, $weeklyData);
+    }
+
     public function show($id)
     {
         $egg = $this->eggRepository->find($id);

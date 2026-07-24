@@ -8,6 +8,7 @@ Route::controller(EggController::class)->prefix('eggs')->group(function () {
      Route::post('per-tray', 'storePerTray');
      Route::post('customize', 'storeCustomize');
      Route::get('profitability', 'loadProfitabilityEggs');
+     Route::get('weekly-production', 'weeklyEggProduction');
 });
 
 Route::apiResource('eggs', EggController::class);
