@@ -9,9 +9,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
-use Override;
 
-use function Illuminate\Log\log;
+use Carbon\CarbonPeriod;
 
 class EggService implements EggServiceInterface
 {
@@ -245,5 +244,40 @@ class EggService implements EggServiceInterface
                 'creation_error' => "Failed to create record: " . $th->getMessage()
             ]);
         }
+    }
+
+    public function weeklyEggProduction(){
+      $dateNow = Carbon::now();
+
+        $startOfWeek = $dateNow->copy()->startOfWeek();
+        $endOfWeek = $dateNow->copy()->endOfWeek();
+
+        $eggs = Egg::select('date_collected')
+            ->selectRaw('SUM(
+                CASE
+                    WHEN unit = "piece" THEN 1
+                    WHEN unit = "tray" THEN total * 30
+                    WHEN unit = "custom" THEN total
+                    ELSE 0
+                END
+            ) as total_eggs')
+            ->whereBetween('date_collected', [
+                $startOfWeek->format('Y-m-d'),
+                $endOfWeek->format('Y-m-d')
+            ])
+            ->groupBy('date_collected')
+            ->pluck('total_eggs', 'date_collected');
+
+        $result = collect(CarbonPeriod::create($startOfWeek, $endOfWeek))
+            ->map(function ($date) use ($eggs) {
+                $dateString = $date->format('Y-m-d 00:00:00');
+
+                return [
+                    'date' => $date->format('D'),
+                    'total_eggs' => (int) ($eggs[$dateString] ?? 0),
+                ];
+            });
+
+        return $result;
     }
 }
